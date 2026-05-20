@@ -1,41 +1,5 @@
 # Agent Instructions
 
-## Project Overview
-
-**Field Agent — SDK-based autonomous sales follow-up system**
-
-A production-grade agent system for post-visit sales follow-up automation. Uses the Anthropic Claude SDK pointed at CrofAI's Anthropic-compatible endpoint (`https://anthropic.nahcrof.com`), Next.js 15 App Router, PostgreSQL, and Docker Compose.
-
-### Pipeline: Ingest → Extract → Plan → Act → Handoff
-
-1. **Ingest/Extract**: Visit context sent to Claude (no tools), returns JSON inside `<result>` tags
-2. **Plan**: Extracted items classified as `agent`/`human`/`approval`, tasks created with appropriate state
-3. **Act**: `executeAgentTasks()` multi-turn loop — Claude with tools → tool handlers → artifacts
-4. **Handoff**: HITL approve/reject modal, approved tasks execute immediately
-
-### Key files
-
-| File | Purpose |
-|------|---------|
-| `src/agent/core.ts` | Agent orchestrator: `runAgent()`, `executeAgentTasks()`, `resolveHITL()` |
-| `src/agent/client.ts` | Anthropic SDK wrapper → `https://anthropic.nahcrof.com` |
-| `src/agent/tools.ts` | 5 Claude-format tool definitions |
-| `src/agent/toolHandlers.ts` | Tool implementations (email, research, expense check, etc.) |
-| `src/data/migrate.ts` | PostgreSQL schema (4 tables + 3 indexes) |
-| `src/data/queries.ts` | 11 CRUD queries |
-| `src/data/seed.ts` | 5 mock visits across industries |
-| `src/app/page.tsx` | Dashboard with visit cards + status badges |
-| `src/app/visits/[id]/page.tsx` | Visit detail with context + AgentRunPanel + TaskList + HITLModal |
-
-### Quick start
-
-```bash
-cp .env.example .env   # Add CROFAI_API_KEY
-docker compose up -d   # App (port 3999) + PostgreSQL
-docker compose exec app npx tsx src/data/seed.ts  # Load mock data
-npm test               # 12 passing tests
-```
-
 This project uses **bd** (beads) for issue tracking. Run `bd prime` for full workflow context.
 
 ## Quick Reference
