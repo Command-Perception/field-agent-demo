@@ -58,3 +58,56 @@ export type ResolveRequest = {
   approved: boolean
   feedback?: string
 }
+
+export type EventType =
+  | "step_start" | "step_end"
+  | "tool_call" | "tool_result"
+  | "decision" | "branch_taken"
+  | "precondition_check" | "precondition_met"
+  | "hitl_waiting" | "hitl_resolved"
+  | "completed" | "failed"
+
+export type ExecutionEvent = {
+  sequence: number
+  type: EventType
+  label: string
+  description?: string
+  data?: Record<string, unknown>
+}
+
+export type FlowTrace = {
+  flow_name: string
+  events: ExecutionEvent[]
+}
+
+export type FlowInput = {
+  trigger: "email" | "manual"
+  email?: {
+    from: string
+    subject: string
+    body: string
+    flow_hint: string
+  }
+  context?: Record<string, unknown>
+}
+
+export type FlowHITLRequest = {
+  runId: string
+  label: string
+  context: Record<string, unknown>
+}
+
+export type FlowHITLResponse = {
+  approved: boolean
+  feedback?: string
+}
+
+export type MockEmail = {
+  id: string
+  from: string
+  subject: string
+  body: string
+  flow_hint: string
+  read: boolean
+  created_at: string
+}
