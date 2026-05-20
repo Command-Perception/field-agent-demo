@@ -46,7 +46,7 @@ flowchart TD
   E -- approval --> G
 
   F --> H[executeAgentTasks: multi-turn tool loop]
-  H --> I[Claude picks tool(s) to call]
+  H --> I["Claude picks tool(s) to call"]
   I --> J[Execute tool handler]
   J --> K[Save artifact]
   K --> L{More ready_to_run?}

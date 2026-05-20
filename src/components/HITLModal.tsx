@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import { resolveHITL } from "@/lib/services/agent"
 
 type Task = {
   id: string
   run_id: string
-  type: "agent" | "human" | "approval"
+  type: string
   title: string
   description?: string
   state: string
@@ -24,15 +25,11 @@ export default function HITLModal({ task, onResolve, onClose }: HITLModalProps) 
   async function handleDecision(approved: boolean) {
     setSubmitting(true)
     try {
-      await fetch("/api/agent/resolve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          runId: task.run_id,
-          taskId: task.id,
-          approved,
-          feedback: feedback.trim() || undefined,
-        }),
+      await resolveHITL({
+        runId: task.run_id,
+        taskId: task.id,
+        approved,
+        feedback: feedback.trim() || undefined,
       })
       onResolve()
     } finally {

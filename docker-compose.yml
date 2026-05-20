@@ -1,8 +1,10 @@
 services:
-  app:
-    build: .
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     ports:
-      - "3000:3000"
+      - "3999:3999"
     depends_on:
       db:
         condition: service_healthy
@@ -11,7 +13,18 @@ services:
       CROFAI_API_KEY: ${CROFAI_API_KEY:?CROFAI_API_KEY is required}
       ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://anthropic.nahcrof.com}
       ANTHROPIC_API_KEY: ${CROFAI_API_KEY}
-    command: sh -c "npx tsx src/data/migrate.ts && npx tsx src/data/seed.ts && node server.js"
+      PORT: "3999"
+
+  app:
+    build: .
+    ports:
+      - "4001:3000"
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
 
   db:
     image: postgres:16-alpine

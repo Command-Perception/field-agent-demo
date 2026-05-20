@@ -6,7 +6,7 @@ import HITLModal from "./HITLModal"
 type Task = {
   id: string
   run_id: string
-  type: "agent" | "human" | "approval"
+  type: string
   title: string
   description?: string
   state: string

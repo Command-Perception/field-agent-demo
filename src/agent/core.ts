@@ -4,6 +4,7 @@ import toolHandlers from "./toolHandlers"
 import type { VisitContext, ExtractedItem } from "./types"
 import * as queries from "../data/queries"
 import { query } from "../data/db"
+import { emit } from "../server/wsManager"
 
 const EXTRACT_SYSTEM_PROMPT = `You are a sales visit follow-up agent. Your job is to:
 1. Review the visit context (notes, outcomes, account info)
@@ -45,6 +46,7 @@ export async function runAgent(visitId: string) {
   if (!visit) throw new Error(`Visit ${visitId} not found`)
 
   const run = await queries.createRun(visitId)
+  emit("phase", { runId: run.id, phase: "ingest", status: "started", visitId })
 
   const analysisTask = await queries.addTask(run.id, {
     type: "agent",
@@ -54,6 +56,7 @@ export async function runAgent(visitId: string) {
   })
 
   try {
+    emit("phase", { runId: run.id, phase: "extract", status: "started", visitId })
     const response = await sendMessage({
       system: EXTRACT_SYSTEM_PROMPT,
       messages: [
@@ -74,6 +77,8 @@ Owner: ${visit.owner_alias || "(unassigned)"}`,
       .map((b: any) => b.text)
       .join("\n")
 
+    emit("phase", { runId: run.id, phase: "extract", status: "complete", visitId })
+
     await queries.updateTaskState(run.id, analysisTask.id, "done", { analysis: content })
 
     await queries.addArtifact(run.id, {
@@ -81,19 +86,23 @@ Owner: ${visit.owner_alias || "(unassigned)"}`,
       title: `Visit analysis - ${visit.account_name}`,
       content,
     })
+    emit("artifact", { runId: run.id, type: "analysis" })
+
+    emit("phase", { runId: run.id, phase: "plan", status: "started", visitId })
 
     const extraction = extractJSON(content)
     if (extraction?.extracted) {
       for (const item of extraction.extracted) {
         const taskType = item.classification === "approval" ? "approval" : item.classification === "human" ? "human" : "agent"
         const taskState = item.classification === "agent" ? "ready_to_run" : "pending_human"
-        await queries.addTask(run.id, {
+        const task = await queries.addTask(run.id, {
           type: taskType,
           title: item.description,
           description: `Extracted from visit: ${item.type}`,
           state: taskState,
           details: { extractedType: item.type },
         })
+        emit("task", { runId: run.id, task })
       }
 
       if (extraction.summary) {
@@ -101,9 +110,15 @@ Owner: ${visit.owner_alias || "(unassigned)"}`,
       }
     }
 
-    await executeAgentTasks(run.id)
+    emit("phase", { runId: run.id, phase: "plan", status: "complete", visitId })
 
-    return await queries.getVisitWithRuns(visitId)
+    emit("phase", { runId: run.id, phase: "act", status: "started", visitId })
+    await executeAgentTasks(run.id)
+    emit("phase", { runId: run.id, phase: "act", status: "complete", visitId })
+
+    const result = await queries.getVisitWithRuns(visitId)
+    emit("run_complete", { runId: run.id, visitId })
+    return result
   } catch (err) {
     await queries.updateRunStatus(run.id, "failed")
     await queries.addArtifact(run.id, {
@@ -111,6 +126,7 @@ Owner: ${visit.owner_alias || "(unassigned)"}`,
       title: "Error",
       content: err instanceof Error ? err.message : "Unknown error",
     })
+    emit("run_complete", { runId: run.id, visitId, error: true })
     return await queries.getVisitWithRuns(visitId)
   }
 }
@@ -143,7 +159,7 @@ export async function executeAgentTasks(runId: string) {
         })
       }
 
-      const toolResults: Array<{ summary: string }> = []
+        const toolResults: Array<{ summary: string }> = []
 
       for (const toolCall of toolCalls) {
         const handler = toolHandlers[toolCall.name]
@@ -151,20 +167,22 @@ export async function executeAgentTasks(runId: string) {
           const result = await handler(toolCall.input, runId)
           toolResults.push(result)
 
-          await queries.addArtifact(runId, {
+          const artifact = await queries.addArtifact(runId, {
             type: result.artifactType as any,
             title: result.artifactTitle,
             content: result.artifactContent,
           })
+          emit("artifact", { runId, artifact })
 
           if (result.followupTasks) {
             for (const ft of result.followupTasks) {
-              await queries.addTask(runId, {
+              const ftask = await queries.addTask(runId, {
                 type: ft.type,
                 title: ft.title,
                 description: ft.description,
                 state: ft.state,
               })
+              emit("task", { runId, task: ftask })
             }
           }
         }
@@ -180,18 +198,22 @@ export async function executeAgentTasks(runId: string) {
         resultSummary,
         toolResults,
       })
+      emit("task_done", { runId, taskId: task.id })
     } catch (err) {
       await queries.updateTaskState(runId, task.id, "done", {
         error: err instanceof Error ? err.message : "Tool execution failed",
       })
+      emit("task_done", { runId, taskId: task.id, error: true })
     }
   }
 
   const pendingCount = await checkPendingTasks(runId)
   if (pendingCount === 0) {
     await queries.updateRunStatus(runId, "completed")
+    emit("status", { runId, status: "completed" })
   } else {
     await queries.updateRunStatus(runId, "waiting_on_human")
+    emit("status", { runId, status: "waiting_on_human" })
   }
 }
 
@@ -204,6 +226,7 @@ export async function resolveHITL(runId: string, taskId: string, approved: boole
   if (tasks[0].state !== "pending_human") throw new Error("Task is not pending human input")
 
   if (approved) {
+    emit("phase", { runId, phase: "act", status: "resumed", taskId })
     if (tasks[0].type === "approval") {
       await queries.updateTaskState(runId, taskId, "done", { approved: true, feedback })
       const newTask = await queries.addTask(runId, {
@@ -213,6 +236,7 @@ export async function resolveHITL(runId: string, taskId: string, approved: boole
         state: "ready_to_run",
         details: { feedback, parentTaskId: taskId },
       })
+      emit("task", { runId, task: newTask })
       await executeAgentTasks(runId)
     } else {
       await queries.updateTaskState(runId, taskId, "done", { approved: true, feedback })
@@ -223,24 +247,28 @@ export async function resolveHITL(runId: string, taskId: string, approved: boole
         state: "ready_to_run",
         details: { feedback, parentTaskId: taskId },
       })
+      emit("task", { runId, task: agentTask })
       await executeAgentTasks(runId)
     }
   } else {
     await queries.updateTaskState(runId, taskId, "done", { approved: false, feedback })
-    await queries.addArtifact(runId, {
+    const artifact = await queries.addArtifact(runId, {
       type: "note",
       title: `Rejected: ${tasks[0].title}`,
       content: feedback || "No reason given",
     })
+    emit("artifact", { runId, artifact })
   }
 
   const pendingCount = await checkPendingTasks(runId)
   if (pendingCount === 0) {
     await queries.updateRunStatus(runId, "completed")
+    emit("status", { runId, status: "completed" })
   } else {
     const runData = await query("SELECT * FROM agent_runs WHERE id = $1", [runId])
     if (runData[0]?.status !== "running") {
       await queries.updateRunStatus(runId, "waiting_on_human")
+      emit("status", { runId, status: "waiting_on_human" })
     }
   }
 

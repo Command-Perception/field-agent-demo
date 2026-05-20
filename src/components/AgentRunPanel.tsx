@@ -1,7 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import TaskList from "./TaskList"
+import PipelineStepper from "./PipelineStepper"
+import ArtifactViewer from "./ArtifactViewer"
+import { useWebSocket } from "@/hooks/useWebSocket"
 
 type Artifact = {
   id: string
@@ -15,7 +18,7 @@ type Artifact = {
 type Task = {
   id: string
   run_id: string
-  type: "agent" | "human" | "approval"
+  type: string
   title: string
   description?: string
   state: string
@@ -24,7 +27,7 @@ type Task = {
 
 type AgentRun = {
   id: string
-  status: "running" | "waiting_on_human" | "completed" | "failed"
+  status: string
   summary?: string
   created_at: string
   updated_at: string
@@ -34,6 +37,7 @@ type AgentRun = {
 
 type AgentRunPanelProps = {
   run: AgentRun | null
+  visitId: string
   onRefresh: () => void
 }
 
@@ -44,8 +48,47 @@ const STATUS_META: Record<string, { label: string; classes: string }> = {
   failed: { label: "Failed", classes: "bg-red-500 text-white" },
 }
 
-export default function AgentRunPanel({ run, onRefresh }: AgentRunPanelProps) {
+export default function AgentRunPanel({ run, visitId, onRefresh }: AgentRunPanelProps) {
+  const [currentPhase, setCurrentPhase] = useState<string | null>(null)
   const [expandedArtifact, setExpandedArtifact] = useState<string | null>(null)
+  const [runStatus, setRunStatus] = useState<string | null>(run?.status || null)
+  const [liveArtifacts, setLiveArtifacts] = useState<Artifact[]>(run?.artifacts || [])
+  const [liveTasks, setLiveTasks] = useState<Task[]>(run?.tasks || [])
+
+  useEffect(() => {
+    setRunStatus(run?.status || null)
+    setLiveArtifacts(run?.artifacts || [])
+    setLiveTasks(run?.tasks || [])
+  }, [run])
+
+  useWebSocket({
+    phase: (data) => {
+      const phase = data.phase as string
+      setCurrentPhase(phase)
+      if (data.status === "started") {
+        setRunStatus("running")
+      }
+    },
+    artifact: () => {
+      onRefresh()
+    },
+    task: () => {
+      onRefresh()
+    },
+    task_done: () => {
+      onRefresh()
+    },
+    status: (data) => {
+      setRunStatus(data.status as string)
+    },
+    run_complete: () => {
+      onRefresh()
+    },
+  })
+
+  const meta = runStatus
+    ? STATUS_META[runStatus] ?? { label: runStatus, classes: "bg-gray-200 text-gray-700" }
+    : null
 
   if (!run) {
     return (
@@ -55,50 +98,46 @@ export default function AgentRunPanel({ run, onRefresh }: AgentRunPanelProps) {
     )
   }
 
-  const meta = STATUS_META[run.status] ?? { label: run.status, classes: "bg-gray-200 text-gray-700" }
-
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-gray-800">Agent Run</h3>
-        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${meta.classes}`}>
-          {meta.label}
-        </span>
+        {meta && (
+          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${meta.classes}`}>
+            {meta.label}
+          </span>
+        )}
       </div>
+
+      {(runStatus === "running" || runStatus === "waiting_on_human" || runStatus === "completed" || runStatus === "failed") && (
+        <PipelineStepper currentPhase={currentPhase} runStatus={runStatus} />
+      )}
+
       {run.summary && (
         <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 border border-gray-100">
           {run.summary}
         </p>
       )}
+
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Tasks</p>
-        <TaskList tasks={run.tasks ?? []} onRefresh={onRefresh} />
+        <TaskList tasks={liveTasks} onRefresh={onRefresh} />
       </div>
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Artifacts</p>
-        {(!run.artifacts || run.artifacts.length === 0) ? (
+        {liveArtifacts.length === 0 ? (
           <p className="text-xs text-gray-400 italic">No artifacts yet.</p>
         ) : (
           <div className="flex flex-col gap-1">
-            {run.artifacts.map((artifact) => (
-              <div key={artifact.id} className="border border-gray-200 rounded-lg">
-                <button
-                  onClick={() =>
-                    setExpandedArtifact(expandedArtifact === artifact.id ? null : artifact.id)
-                  }
-                  className="w-full flex items-center justify-between px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  <span>{artifact.title}</span>
-                  <span className="text-xs text-gray-400">
-                    {expandedArtifact === artifact.id ? "\u25B2" : "\u25BC"}
-                  </span>
-                </button>
-                {expandedArtifact === artifact.id && artifact.content && (
-                  <pre className="px-3 pb-3 text-xs text-gray-600 whitespace-pre-wrap font-sans border-t border-gray-100 pt-2">
-                    {artifact.content}
-                  </pre>
-                )}
-              </div>
+            {liveArtifacts.map((artifact) => (
+              <ArtifactViewer
+                key={artifact.id}
+                artifact={artifact}
+                expanded={expandedArtifact === artifact.id}
+                onToggle={() =>
+                  setExpandedArtifact(expandedArtifact === artifact.id ? null : artifact.id)
+                }
+              />
             ))}
           </div>
         )}

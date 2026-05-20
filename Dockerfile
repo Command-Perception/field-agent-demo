@@ -12,6 +12,7 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 RUN mkdir .next
 COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/src/data ./src/data
 COPY --from=builder /app/.next/static ./.next/static
 USER nextjs
 EXPOSE 3000

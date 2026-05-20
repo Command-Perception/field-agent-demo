@@ -3,31 +3,22 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
 import AgentRunPanel from "@/components/AgentRunPanel"
-
-type Visit = {
-  id: string
-  account_name: string
-  account_industry?: string
-  subject: string
-  notes?: string
-  outcomes?: string
-  owner_alias?: string
-  created_at?: string
-  runs?: any[]
-}
+import { getVisit } from "@/lib/services/visits"
+import { runAgent } from "@/lib/services/agent"
+import type { VisitWithRuns } from "@/lib/services/visits"
 
 export default function VisitDetailPage() {
   const params = useParams()
-  const [visit, setVisit] = useState<Visit | null>(null)
+  const [visit, setVisit] = useState<VisitWithRuns | null>(null)
   const [loading, setLoading] = useState(true)
   const [running, setRunning] = useState(false)
 
   const fetchVisit = useCallback(async () => {
     try {
-      const res = await fetch(`/api/visits/${params.id}`)
-      if (res.ok) setVisit(await res.json())
+      const data = await getVisit(params.id as string)
+      setVisit(data)
     } catch {
-      // ignore
+      setVisit(null)
     } finally {
       setLoading(false)
     }
@@ -40,12 +31,9 @@ export default function VisitDetailPage() {
   async function handleRunAgent() {
     setRunning(true)
     try {
-      await fetch("/api/agent/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitId: params.id }),
-      })
+      await runAgent(params.id as string)
       await fetchVisit()
+    } catch {
     } finally {
       setRunning(false)
     }
@@ -54,7 +42,7 @@ export default function VisitDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400">Loading…</p>
+        <p className="text-gray-400">Loading...</p>
       </div>
     )
   }
@@ -86,7 +74,7 @@ export default function VisitDetailPage() {
             disabled={running}
             className="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {running ? "Running…" : "Run Agent"}
+            {running ? "Running..." : "Run Agent"}
           </button>
         </div>
       </header>
@@ -137,10 +125,27 @@ export default function VisitDetailPage() {
                   </p>
                 </div>
               )}
+              {visit.runs && visit.runs.length > 1 && (
+                <div>
+                  <p className="text-xs text-gray-400 uppercase">Previous Runs</p>
+                  <div className="flex flex-col gap-1 mt-1">
+                    {visit.runs.slice(1, 4).map((r: any) => (
+                      <div key={r.id} className="flex items-center gap-2 text-xs text-gray-500">
+                        <span className={`w-2 h-2 rounded-full ${
+                          r.status === "completed" ? "bg-green-400" :
+                          r.status === "failed" ? "bg-red-400" : "bg-yellow-400"
+                        }`} />
+                        <span>{r.status}</span>
+                        <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="lg:col-span-3">
-            <AgentRunPanel run={latestRun} onRefresh={fetchVisit} />
+            <AgentRunPanel run={latestRun} visitId={visit.id} onRefresh={fetchVisit} />
           </div>
         </div>
       </main>

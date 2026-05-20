@@ -69,7 +69,12 @@ async function seed() {
   console.log("Visit IDs:", createdIds)
 }
 
-seed().catch((err) => {
-  console.error("Seed failed:", err)
-  process.exit(1)
-})
+export { seed }
+
+const isMain = process.argv[1]?.endsWith("seed.ts") || process.argv[1]?.includes("seed")
+if (isMain) {
+  seed().catch((err) => {
+    console.error("Seed failed:", err)
+    process.exit(1)
+  })
+}
