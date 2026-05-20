@@ -62,8 +62,9 @@ describe("Agent Pipeline", () => {
 
       if (resolved.runs?.[0]) {
         const updatedRun = resolved.runs[0]
-        expect(updatedRun.tasks.filter((t: any) => t.state === "pending_human").length)
-          .toBeLessThan(pendingTasks.length)
+        const resolvedTask = updatedRun.tasks.find((t: any) => t.id === approvalTask.id)
+        expect(resolvedTask?.state).toBe("done")
+        expect(resolvedTask?.result).toHaveProperty("approved", true)
       }
     }
 
