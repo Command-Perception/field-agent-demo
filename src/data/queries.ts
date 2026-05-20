@@ -142,3 +142,41 @@ export async function addArtifact(
   )
   return rows[0]
 }
+
+export async function listMockEmails() {
+  return query("SELECT * FROM mock_emails ORDER BY created_at DESC")
+}
+
+export async function getMockEmail(id: string) {
+  const rows = await query("SELECT * FROM mock_emails WHERE id = $1", [id])
+  return rows[0] || null
+}
+
+export async function markEmailRead(id: string) {
+  await query("UPDATE mock_emails SET is_read = true WHERE id = $1", [id])
+}
+
+export async function listFlowTraces() {
+  return query(
+    `SELECT id, visit_id, status, summary, execution_trace, created_at, updated_at
+     FROM agent_runs
+     WHERE execution_trace IS NOT NULL
+     ORDER BY created_at DESC`
+  )
+}
+
+export async function getFlowTrace(runId: string) {
+  const rows = await query(
+    `SELECT id, visit_id, status, summary, execution_trace, created_at, updated_at
+     FROM agent_runs WHERE id = $1 AND execution_trace IS NOT NULL`,
+    [runId]
+  )
+  return rows[0] || null
+}
+
+export async function saveFlowTrace(runId: string, trace: Record<string, unknown>) {
+  await query(
+    `UPDATE agent_runs SET execution_trace = $1::jsonb, updated_at = NOW() WHERE id = $2`,
+    [JSON.stringify(trace), runId]
+  )
+}
