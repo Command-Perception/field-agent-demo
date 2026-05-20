@@ -44,3 +44,6 @@ next-env.d.ts
 .superpowers/
 tests/e2e/logs/
 .ai/tests/sessions/
+
+*storybook.log
+storybook-static

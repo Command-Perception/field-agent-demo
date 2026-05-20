@@ -71,6 +71,19 @@ api.get("/api/agent/status", async (c) => {
   }
 })
 
+api.post("/api/reset", async (c) => {
+  try {
+    await query("TRUNCATE visits, agent_runs, agent_tasks, artifacts, mock_emails RESTART IDENTITY CASCADE")
+    const { seed } = await import("../data/seed")
+    await seed()
+    const { seedEmails } = await import("../../.ai/samples/seed-emails")
+    await seedEmails()
+    return c.json({ message: "Database reset and reseeded" })
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Reset failed" }, 500)
+  }
+})
+
 api.post("/api/seed", async (c) => {
   try {
     const { seed } = await import("../data/seed")
