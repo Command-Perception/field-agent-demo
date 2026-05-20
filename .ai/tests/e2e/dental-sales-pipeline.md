@@ -1,8 +1,9 @@
 # Scenario: Dental Sales Pipeline Demo
 
 **Theme:** Dental sales follow-up automation
+**Viewport:** 1440x900
 **Record:** true
-**Max duration:** 180 seconds
+**Max duration:** 180
 
 ## Steps
 
@@ -34,18 +35,16 @@ Click "Run Agent". The button should change to "Running..." (disabled).
 
 ### 5. Wait for Pipeline Completion
 Watch the pipeline stepper progress through phases:
-- Ingest → Extract → Plan → Act → Done
-- The status badge should show "Waiting on Human" or "Completed"
-- Maximum wait time: 120 seconds
-
-Check periodically by snapshotting every 10 seconds.
+- Ingest ✓ → Extract ✓ → Plan ✓ → Act → Done
+- Status badge should show "Waiting on Human" or "Completed"
+- Check every 10 seconds, max 120 seconds
 
 ### 6. Review Analysis Artifact
-Find the "Visit analysis - Prestige Dental Care" artifact in the artifacts section.
-Expand it to verify it contains the extraction result from Claude.
+Find and expand the "Visit analysis - Prestige Dental Care" artifact in the artifacts section.
+Verify it contains the extraction result JSON from Claude.
 
 ### 7. Identify Pending HITL Tasks
-Look for tasks with "Pending" state and Approve/Reject buttons.
+Look for tasks with "Pending" state badge and Approve/Reject buttons visible.
 
 ### 8. Approve a Pending Task
 Click the "Approve" button on a pending task.
@@ -55,9 +54,7 @@ In the HITL modal that appears:
 - Wait for the modal to close
 
 ### 9. Verify Follow-up Results
-After approval, verify:
-- New artifacts appeared (research, task created notes, etc.)
-- The pipeline stepper updated
+After approval, verify new artifacts appeared (research, task notes).
 
 ### 10. Take Final Screenshot
 Take a full-page screenshot of the visit detail page showing all results.
@@ -66,9 +63,9 @@ Take a full-page screenshot of the visit detail page showing all results.
 
 - [ ] Dashboard loaded with visit cards
 - [ ] Visit created with correct account name
-- [ ] Agent run completed (waiting_on_human or completed)
-- [ ] Analysis artifact exists and contains extraction data
-- [ ] HITL modal opened and approve flow worked
+- [ ] Agent run completed
+- [ ] Analysis artifact exists
+- [ ] HITL modal approve flow worked
 - [ ] New artifacts appeared after approval
-- [ ] Screenshot captured
-- [ ] Video recorded (if record=true)
+- [ ] Screenshots captured
+- [ ] Video recorded

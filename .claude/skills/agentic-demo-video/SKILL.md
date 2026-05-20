@@ -14,197 +14,142 @@ Executes high-level markdown test scenarios by piloting agent-browser. The agent
 ```
 .ai/
   tests/
-    e2e/                    # Markdown test scenarios (one file per scenario)
+    e2e/                    # Markdown test scenarios
       <name>.md
     sessions/               # One directory per execution
       <timestamp>/
-        session.md           # Live-updating progress log (agent writes as it goes)
+        session.md           # Live-updating progress log
         session.mp4          # Video recording (if record=true)
 ```
 
-### Scenario Format (`.ai/tests/e2e/<name>.md`)
+### Scenario Format
 
-Scenarios use plain markdown with optional annotations:
+Scenarios use frontmatter for configuration and markdown for steps:
 
 ```markdown
-# Scenario: Dental Sales Pipeline Demo
+# Scenario: Name
 
-**Theme:** Dental sales follow-up
+**Viewport:** 1440x900           # Browser viewport (default: 1440x900)
+**Record:** true                  # Record video (default: true)
+**Max duration:** 180            # Max seconds for async waits
 
 ## Steps
 
-1. Open http://devbox.knet:4001 and verify dashboard loads
-2. Click "+ New Visit" to open the creation form
-3. Enter account name "Prestige Dental Care", industry "dental", ...
-4. Write detailed notes about the sales visit
-5. Click "Create Visit" and wait for navigation to detail page
-6. Click "Run Agent" and wait for the pipeline to complete
-7. ...
-
-## Verification
-
-- An analysis artifact was created
-- Tasks exist with proper classifications
-- HITL approve/reject buttons visible for pending tasks
+1. Open http://devbox.knet:4001
+2. Click "+ New Visit"
+...
 ```
 
-### Session Format (`.ai/tests/sessions/<session>/session.md`)
+### Session Format
 
-The agent writes to this file AS IT PROGRESSES:
+The agent writes to `session.md` AS IT PROGRESSES — every action triggers an update:
 
 ```markdown
-# Session: dental-sales-pipeline-20260520T171500
+# Session: name-timestamp
 
-**Scenario:** Dental Sales Pipeline Demo
+**Scenario:** Name
 **Status:** in_progress | completed | failed
-**Recorded:** session.mp4
+**Viewport:** 1440x900
 
 ## Progress
 
 ### Step 1: Open dashboard
-- [x] Navigated to http://devbox.knet:4001
-- [x] Dashboard loaded with visit cards visible
-- Screenshot: `step1-dashboard.png`
-
-### Step 2: Create new visit
-- [x] Clicked "+ New Visit"
-- [x] Filed form with dental practice details
-- [x] Submitted form, navigated to detail page
-- Screenshot: `step2-visit-created.png`
-
-...
+- [x] Navigated to URL
+- [x] Dashboard loaded
+- Screenshot: step1-dashboard.png
 ```
 
-## Execution Pattern
-
-The agent dispatches a **subagent** to execute the scenario. The subagent follows this loop:
+## Core Execution Flow
 
 ```
-for each step in scenario:
-  1. agent-browser snapshot -i      # Read current page state
-  2. Find target element from snapshot refs
-  3. Interact (click, fill, wait)
-  4. Wait for expected outcome
-  5. Take screenshot for evidence
-  6. Update session.md with progress
+1. Read scenario → extract viewport, record flag, max duration
+2. Create session directory
+3. Open browser:  agent-browser open <url>
+4. Set viewport:  agent-browser set viewport <W> <H>
+5. Start record:  agent-browser record start session.mp4  (if record=true)
+6. For each step:
+   a. agent-browser snapshot -i         # Read live page state
+   b. Find element refs, interact       # click, fill, wait
+   c. agent-browser screenshot path.png  # Evidence
+   d. Update session.md                  # Log NOW
+7. Stop: agent-browser record stop
+8. Convert WebM → MP4 via ffmpeg        # (if record=true)
+9. Write final status to session.md
 ```
 
 ## Tool Reference
 
-### agent-browser commands used in demos
-
 ```bash
-# Navigation
 agent-browser open <url>                    # Open page
-agent-browser close                         # Close current session
+agent-browser close                         # Close session
 agent-browser close --all                   # Close all sessions
 
-# Reading the page
-agent-browser snapshot -i                   # Interactive elements only (preferred)
-agent-browser snapshot                       # Full accessibility tree
+agent-browser set viewport <w> <h>          # Set browser viewport size (call after open)
+agent-browser snapshot -i                   # Interactive elements (use this)
 agent-browser snapshot -i -c                # Compact view
-agent-browser get text @e1                  # Get specific element text
 
-# Interacting
-agent-browser click @e3                     # Click by ref from snapshot
-agent-browser fill @e4 "text"               # Fill input by ref
+agent-browser click @e3                     # Click by ref
+agent-browser fill @e4 "text"              # Fill input
 agent-browser press Enter                   # Press key
-agent-browser select @e5 "option"           # Select dropdown
 
-# Waiting
 agent-browser wait --load networkidle       # Wait for network idle
-agent-browser wait 2000                     # Wait milliseconds
-agent-browser wait --visible @e3            # Wait for element visible
-
-# Screenshots
+agent-browser wait 2000                     # Wait ms
 agent-browser screenshot path.png           # Take screenshot
-agent-browser screenshot --full page.png    # Full page screenshot
-
-# Video recording (optional, controlled by record flag)
-agent-browser record start path.mp4         # Start recording
+agent-browser record start path.mp4         # Start video recording
 agent-browser record stop                   # Stop and save
 ```
 
-### Handling Asynchronous Operations
+## Handling Async Operations
 
-Agent runs are async. After clicking "Run Agent":
+After "Run Agent": snapshot every 10s. Look for pipeline stepper phases, tasks appearing, status badge changing. Max wait = scenario's `Max duration` or 120s default.
 
-1. Snapshot periodically (every 5 seconds) until pipeline stepper shows completion
-2. Look for changes: new tasks, artifacts, status badge changes
-3. Max wait: 120 seconds before declaring timeout
-4. If the button re-enables or status changes to completed/waiting_on_human, proceed
+## Handling HITL Tasks
 
-Common indicators the run is progressing:
-- "Running" button (disabled text) → pipeline is active
-- Pipeline stepper phases filling in (Ingest ✓, Extract ✓, etc.)
-- Tasks appearing in the task list
-- Artifacts appearing
-- "Run Agent" button re-enabling → run finished
+Pending tasks show Approve/Reject buttons. Click Approve → modal appears → fill feedback → click modal's Approve → wait for modal to close.
 
-### Handling HITL Tasks
+## Video Post-Processing
 
-When tasks are in `pending_human` state:
-1. They show "Approve" and "Reject" buttons in the task list
-2. Click "Approve" → a modal appears
-3. The modal has a feedback textarea and its own Approve/Reject buttons
-4. Fill feedback, click the modal's "Approve"
-5. Wait for the modal to close and the task to update
-
-### Ref Lifecycle
-
-Refs (`@e1`, `@e2`, ...) are assigned fresh on every `snapshot`.
-They become **stale after any page change** — always re-snapshot before interacting.
-
-## Agent Instructions
-
-When dispatched as a subagent to run a scenario:
-
-1. **Read the scenario file** from `.ai/tests/e2e/<name>.md`
-2. **Create session directory**: `.ai/tests/sessions/<scenario-name>-<timestamp>/`
-3. **Initialize session.md** with header (status: in_progress)
-4. **If recording**: Start `agent-browser record start session.mp4`
-5. **For each step** in the scenario:
-   a. Execute the action (navigate, click, fill, wait)
-   b. Take a screenshot saved to the session directory
-   c. **Update session.md immediately** with results, observations, screenshot paths
-   d. If a step fails, retry once with a different approach, then log failure
-### Step 6: Wait for run to complete
- 6. After all steps: Stop recording.
-
-### Step 7: Convert video to MP4 (if record=true)
-The WebM file from agent-browser uses VP8 codec which isn't universally playable.
-Always convert to MP4 (H.264) using ffmpeg:
+agent-browser records WebM (VP8 codec). Always convert to MP4 (H.264):
 
 ```bash
 ffmpeg -i session.webm -c:v libx264 -preset fast -crf 23 -pix_fmt yuv420p session.mp4 -y
+rm session.webm
 ```
 
-If ffmpeg is not installed, install it first:
-```bash
-sudo apt-get install -y ffmpeg || brew install ffmpeg
-```
+Install ffmpeg: `sudo apt-get install -y ffmpeg || brew install ffmpeg`
 
-The final video path in session.md should reference the `.mp4` file, not `.webm`.
-Delete the original `.webm` after conversion.
-7. **Return**: Summary of what happened, path to session.md, path to video
+## Agent Instructions
+
+When dispatched as a subagent:
+
+1. **Read scenario file** from `.ai/tests/e2e/<name>.md`
+2. **Extract config**: viewport (default 1440x900), record flag (default true), max duration (default 120)
+3. **Create session dir**: `.ai/tests/sessions/<name>-<timestamp>/`
+4. **Initialize session.md** with header (status: in_progress, viewport config)
+5. **Open browser**: `agent-browser open <first-url>`
+6. **Set viewport**: `agent-browser set viewport <W> <H>`
+7. **Start recording**: `agent-browser record start session.webm` (if record=true)
+8. **For each step** in the scenario:
+   a. `agent-browser snapshot -i` to find current element refs
+   b. Interact using refs
+   c. `agent-browser screenshot step<N>.png`
+   d. **Update session.md immediately** with result, observations, screenshot path
+   e. If a step fails, retry once with different approach, then log failure
+9. **Stop recording**: `agent-browser record stop` (if record=true)
+10. **Convert video**: `ffmpeg ... session.webm session.mp4 && rm session.webm` (if record=true)
+11. **Write final status** to session.md (completed or failed)
+12. **Return**: summary, session.md path, session.mp4 path
 
 ### Error Recovery
 
-- **Element not found**: Re-snapshot, try broader selector. If still not found after 3 attempts, log failure and continue to next step.
-- **Page load timeout**: Refresh page, retry step.
-- **Agent run timeout (>120s)**: Log as warning, continue to check partial results.
-- **Modal not appearing**: Click may not have registered. Re-snapshot, verify modal is open, retry click.
+- **Element not found**: Re-snapshot, try broader. 3 attempts max, then log failure and continue.
+- **Page load timeout**: Refresh, retry.
+- **Agent run timeout**: Log warning, check partial results.
+- **Modal not appearing**: Re-snapshot, verify modal state, retry click.
 
 ## Invocation
 
-This skill can be invoked in two modes:
+Invokable in two modes — controlled by the scenario's `Record:` field:
 
-```bash
-# With video recording (for demo creation)
-# The skill dispatches a subagent with: record=true
-
-# Without video recording (for quick testing)
-# The skill dispatches a subagent with: record=false
-```
-
-The subagent checks the record flag to decide whether to call `agent-browser record start/stop`.
+- **record: true** — Full demo with video recording + MP4 conversion
+- **record: false** — Quick test run, no video (faster)
