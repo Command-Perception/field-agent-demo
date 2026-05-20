@@ -82,3 +82,38 @@ bd close <id>         # Complete work
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 <!-- END BEADS INTEGRATION -->
+
+## Superpowers Integration
+
+This project uses the **OpenCode Superpowers** system. Skills are loaded via the `skill` tool. Always check for a relevant skill before starting any task.
+
+### Workflow
+
+1. **Check beads first** — Run `bd ready --json --limit 5` to find available work
+2. **Claim with beads** — `bd update <id> --claim` before starting
+3. **Check Superpowers** — Load relevant skill(s) via the `skill` tool
+4. **Use process skills first** — `brainstorming` before new features, `requesting-code-review` after implementation, `systematic-debugging` for bugs
+5. **Use implementation skills second** — `writing-plans` then `subagent-driven-development` or `executing-plans`
+6. **Close with beads** — `bd close <id>` when done, push changes
+
+### Session Completion (Superpowers-aware)
+
+When superpowers skills are used during a session:
+- Spec documents go to `docs/superpowers/specs/`
+- Implementation plans go to `docs/superpowers/plans/`
+- Commit spec/plan docs to git alongside code changes
+- Code review outputs should be filed as beads issues if they surface actionable work
+
+### Key Superpowers Skills for This Project
+
+| Skill | When to use |
+|-------|-------------|
+| `brainstorming` | Before any new feature, component, or architectural change |
+| `requesting-code-review` | After completing features, before merge |
+| `writing-plans` | After brainstorming, before implementation |
+| `subagent-driven-development` | For multi-task implementation (parallel agents) |
+| `executing-plans` | For single-session sequential implementation |
+| `systematic-debugging` | When diagnosing bugs or failures |
+| `test-driven-development` | When writing new features or fixing bugs |
+| `agent-browser` | For browser-based E2E testing |
+| `verification-before-completion` | Before claiming any work is done |

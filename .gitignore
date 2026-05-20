@@ -26,6 +26,9 @@ yarn-error.log*
 .env
 .env*.local
 
+# code index
+.codemogger/
+
 # vercel
 .vercel
 

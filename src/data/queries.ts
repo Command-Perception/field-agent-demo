@@ -21,7 +21,10 @@ export async function listVisitsWithLatestRun() {
     account_name: r.account_name,
     account_industry: r.account_industry,
     subject: r.subject,
+    notes: r.notes,
+    outcomes: r.outcomes,
     owner_alias: r.owner_alias,
+    created_at: r.created_at,
     latest_run_status: r.latest_run_status || null,
   }))
 }

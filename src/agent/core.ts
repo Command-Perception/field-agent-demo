@@ -81,12 +81,12 @@ Owner: ${visit.owner_alias || "(unassigned)"}`,
 
     await queries.updateTaskState(run.id, analysisTask.id, "done", { analysis: content })
 
-    await queries.addArtifact(run.id, {
+    const analysisArtifact = await queries.addArtifact(run.id, {
       type: "analysis",
       title: `Visit analysis - ${visit.account_name}`,
       content,
     })
-    emit("artifact", { runId: run.id, type: "analysis" })
+    emit("artifact", { runId: run.id, artifact: analysisArtifact })
 
     emit("phase", { runId: run.id, phase: "plan", status: "started", visitId })
 
@@ -227,29 +227,17 @@ export async function resolveHITL(runId: string, taskId: string, approved: boole
 
   if (approved) {
     emit("phase", { runId, phase: "act", status: "resumed", taskId })
-    if (tasks[0].type === "approval") {
-      await queries.updateTaskState(runId, taskId, "done", { approved: true, feedback })
-      const newTask = await queries.addTask(runId, {
-        type: "agent",
-        title: `Execute: ${tasks[0].title}`,
-        description: tasks[0].description,
-        state: "ready_to_run",
-        details: { feedback, parentTaskId: taskId },
-      })
-      emit("task", { runId, task: newTask })
-      await executeAgentTasks(runId)
-    } else {
-      await queries.updateTaskState(runId, taskId, "done", { approved: true, feedback })
-      const agentTask = await queries.addTask(runId, {
-        type: "agent",
-        title: `Handle: ${tasks[0].title}`,
-        description: tasks[0].description,
-        state: "ready_to_run",
-        details: { feedback, parentTaskId: taskId },
-      })
-      emit("task", { runId, task: agentTask })
-      await executeAgentTasks(runId)
-    }
+    const titlePrefix = tasks[0].type === "approval" ? "Execute" : "Handle"
+    await queries.updateTaskState(runId, taskId, "done", { approved: true, feedback })
+    const newTask = await queries.addTask(runId, {
+      type: "agent",
+      title: `${titlePrefix}: ${tasks[0].title}`,
+      description: tasks[0].description,
+      state: "ready_to_run",
+      details: { feedback, parentTaskId: taskId },
+    })
+    emit("task", { runId, task: newTask })
+    await executeAgentTasks(runId)
   } else {
     await queries.updateTaskState(runId, taskId, "done", { approved: false, feedback })
     const artifact = await queries.addArtifact(runId, {

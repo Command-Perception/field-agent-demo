@@ -1,7 +1,7 @@
-import { serve } from "@hono/node-server"
+import { serve, type ServerType } from "@hono/node-server"
 import type { Server } from "http"
 import { api } from "./hono"
-import { initWebSocketServer } from "./wsManager"
+import { initWebSocketServer, closeWebSocketServer } from "./wsManager"
 import { query, initializePool } from "../data/db"
 
 async function waitForDb(maxRetries = 10, delay = 2000) {
@@ -73,7 +73,16 @@ waitForDb().then(() => migrate()).then(() => {
     fetch: api.fetch,
     port: PORT,
   })
-  initWebSocketServer(server as unknown as Server)
+  initWebSocketServer(server as any)
+
+  function shutdown() {
+    closeWebSocketServer()
+    server.close()
+    process.exit(0)
+  }
+  process.on("SIGTERM", shutdown)
+  process.on("SIGINT", shutdown)
+
   console.log(`API server running on http://0.0.0.0:${PORT}`)
   console.log(`WebSocket available at ws://0.0.0.0:${PORT}/ws`)
 }).catch((err) => {

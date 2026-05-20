@@ -13,7 +13,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit"
+    "test:e2e:headless": "vitest run --config vitest.e2e.config.ts",
+    "typecheck": "tsc --noEmit",
+    "typecheck:server": "tsc --noEmit --project tsconfig.server.json"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
