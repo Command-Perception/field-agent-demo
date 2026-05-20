@@ -42,3 +42,4 @@ next-env.d.ts
 .beads-credential-key
 .worktrees/
 tests/e2e/logs/
+.ai/tests/sessions/
