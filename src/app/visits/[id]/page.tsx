@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
-import AgentRunPanel from "@/components/AgentRunPanel"
+import TaskList from "@/components/TaskList"
+import ArtifactViewer from "@/components/ArtifactViewer"
 import { getVisit } from "@/lib/services/visits"
 import { runAgent } from "@/lib/services/agent"
 import type { VisitWithRuns } from "@/lib/services/visits"
@@ -145,7 +146,40 @@ export default function VisitDetailPage() {
             </div>
           </div>
           <div className="lg:col-span-3">
-            <AgentRunPanel run={latestRun} visitId={visit.id} onRefresh={fetchVisit} />
+            {latestRun ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Run</h2>
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                    latestRun.status === "completed" ? "bg-green-100 text-green-700" :
+                    latestRun.status === "failed" ? "bg-red-100 text-red-700" :
+                    latestRun.status === "waiting_on_human" ? "bg-yellow-100 text-yellow-700" :
+                    "bg-blue-100 text-blue-700"
+                  }`}>
+                    {latestRun.status}
+                  </span>
+                </div>
+                {latestRun.summary && (
+                  <p className="text-sm text-gray-600">{latestRun.summary}</p>
+                )}
+                {latestRun.tasks && latestRun.tasks.length > 0 && (
+                  <TaskList tasks={latestRun.tasks as any} onRefresh={fetchVisit} />
+                )}
+                {latestRun.artifacts && latestRun.artifacts.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase">Artifacts</h3>
+                    {latestRun.artifacts.map((a: any) => (
+                      <ArtifactViewer key={a.id} artifact={a} expanded={false} onToggle={() => {}} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+                <p className="text-sm text-gray-400">No runs yet.</p>
+                <p className="text-xs text-gray-300 mt-1">Click &quot;Run Agent&quot; to start.</p>
+              </div>
+            )}
           </div>
         </div>
       </main>
