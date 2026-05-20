@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "agent_system",
+  "project_id": "9bfbc03b-80fa-4c73-a429-dc3e2df80c5e"
+}
