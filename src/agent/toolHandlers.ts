@@ -149,6 +149,177 @@ const toolHandlers: Record<string, ToolHandler> = {
       artifactContent: outline,
     }
   },
+
+  send_notification: async (input, runId) => {
+    const { role, message } = input as { role: string; message: string }
+    return {
+      summary: `Notification sent to ${role}`,
+      artifactType: "note",
+      artifactTitle: `Notification: ${role}`,
+      artifactContent: `To: ${role}\nMessage: ${message}`,
+    }
+  },
+
+  create_service_record: async (input, runId) => {
+    const { equipmentId, status, notes } = input as { equipmentId: string; status: string; notes?: string }
+    return {
+      summary: `Service record created for ${equipmentId}: ${status}`,
+      artifactType: "note",
+      artifactTitle: `Service: ${equipmentId}`,
+      artifactContent: `Equipment: ${equipmentId}\nStatus: ${status}\nNotes: ${notes || "N/A"}`,
+    }
+  },
+
+  get_customer_info: async (input, runId) => {
+    const { name } = input as { name: string }
+    return {
+      summary: `Customer info retrieved for ${name}`,
+      artifactType: "research",
+      artifactTitle: `Customer: ${name}`,
+      artifactContent: JSON.stringify({
+        name,
+        accountType: "dental_practice",
+        status: "active",
+        contact: "Dr. Smith",
+        since: "2023",
+      }),
+    }
+  },
+
+  submit_expense_report: async (input, runId) => {
+    const { amount, merchant, category, description } = input as {
+      amount: number; merchant: string; category: string; description?: string
+    }
+    return {
+      summary: `Expense submitted: $${amount} at ${merchant}`,
+      artifactType: "expense_check",
+      artifactTitle: `Expense: ${merchant} - $${amount}`,
+      artifactContent: `Amount: $${amount}\nMerchant: ${merchant}\nCategory: ${category}\nDescription: ${description || "N/A"}`,
+    }
+  },
+
+  check_per_diem: async (input, runId) => {
+    const { amount, category } = input as { amount: number; category: string }
+    const limits: Record<string, number> = {
+      meals: 75,
+      entertainment: 100,
+      travel: 500,
+      supplies: 200,
+    }
+    const limit = limits[category] || 100
+    const over = amount > limit
+    return {
+      summary: `Per diem check: $${amount} vs $${limit} limit — ${over ? "OVER" : "WITHIN"}`,
+      artifactType: "expense_check",
+      artifactTitle: `Per Diem: $${amount}`,
+      artifactContent: `Amount: $${amount}\nLimit: $${limit}\nResult: ${over ? "EXCEEDS LIMIT — requires approval" : "Within policy — auto-approved"}`,
+    }
+  },
+
+  verify_receipt: async (input, runId) => {
+    const { attached } = input as { attached: boolean }
+    return {
+      summary: attached ? "Receipt attached" : "No receipt attached",
+      artifactType: "expense_check",
+      artifactTitle: "Receipt Check",
+      artifactContent: attached
+        ? "Receipt is attached and valid."
+        : "No receipt attached. Requesting from submitter.",
+    }
+  },
+
+  check_warranty_status: async (input, runId) => {
+    const { equipmentId } = input as { equipmentId: string }
+    const mockWarranty = { inWarranty: true, expiryDate: "2026-12-31", coverage: "parts_and_labor" }
+    return {
+      summary: `Warranty check for ${equipmentId}: ${mockWarranty.inWarranty ? "In warranty" : "Expired"}`,
+      artifactType: "research",
+      artifactTitle: `Warranty: ${equipmentId}`,
+      artifactContent: JSON.stringify(mockWarranty),
+    }
+  },
+
+  check_part_inventory: async (input, runId) => {
+    const { partId } = input as { partId: string }
+    const mockInventory = { inStock: true, quantity: 15, estimatedDelivery: "2 days" }
+    return {
+      summary: `Inventory check for ${partId}: ${mockInventory.inStock ? `${mockInventory.quantity} in stock` : "Backordered"}`,
+      artifactType: "research",
+      artifactTitle: `Inventory: ${partId}`,
+      artifactContent: JSON.stringify(mockInventory),
+    }
+  },
+
+  order_parts: async (input, runId) => {
+    const { part, quantity } = input as { part: string; quantity: number }
+    const orderNumber = `PO-${Date.now().toString(36).toUpperCase()}`
+    return {
+      summary: `Order placed: ${quantity}x ${part} (${orderNumber})`,
+      artifactType: "note",
+      artifactTitle: `Order: ${part}`,
+      artifactContent: `Part: ${part}\nQuantity: ${quantity}\nOrder #: ${orderNumber}\nStatus: Placed\nETA: 2-3 days`,
+    }
+  },
+
+  assess_recall_severity: async (input, runId) => {
+    const { text } = input as { text: string }
+    const isUrgent = text.toLowerCase().includes("urgent") || text.toLowerCase().includes("safety")
+    return {
+      summary: `Severity assessment: ${isUrgent ? "CRITICAL" : "Standard"}`,
+      artifactType: "research",
+      artifactTitle: "Recall Severity Assessment",
+      artifactContent: JSON.stringify({
+        severity: isUrgent ? "critical" : "standard",
+        requiresImmediateAction: isUrgent,
+        recommendedWindow: isUrgent ? "24 hours" : "30 days",
+      }),
+    }
+  },
+
+  notify_customer: async (input, runId) => {
+    const { customer, subject, message } = input as {
+      customer: string; subject: string; message: string
+    }
+    return {
+      summary: `Notification drafted for ${customer}: ${subject}`,
+      artifactType: "email_draft",
+      artifactTitle: `Notify: ${customer}`,
+      artifactContent: `To: ${customer}\nSubject: ${subject}\n\n${message}`,
+    }
+  },
+
+  execute_recall: async (input, runId) => {
+    const { equipmentId, partsUsed } = input as { equipmentId: string; partsUsed?: string[] }
+    return {
+      summary: `Recall executed for ${equipmentId}`,
+      artifactType: "note",
+      artifactTitle: `Recall: ${equipmentId}`,
+      artifactContent: JSON.stringify({
+        equipmentId,
+        partsUsed: partsUsed || [],
+        status: "completed",
+        date: new Date().toISOString(),
+      }),
+    }
+  },
+
+  schedule_visit: async (input, runId) => {
+    const { customer, reason, preference } = input as {
+      customer?: string; reason: string; preference?: string
+    }
+    return {
+      summary: `Visit scheduled: ${reason}${preference ? ` (${preference})` : ""}`,
+      artifactType: "note",
+      artifactTitle: `Visit: ${reason}`,
+      artifactContent: JSON.stringify({
+        customer: customer || "Acme Dental",
+        reason,
+        preference: preference || "first_available",
+        scheduledDate: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+        status: "scheduled",
+      }),
+    }
+  },
 }
 
 export default toolHandlers
