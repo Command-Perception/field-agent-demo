@@ -3,6 +3,9 @@ import { cors } from "hono/cors"
 import * as queries from "../data/queries"
 import { query } from "../data/db"
 import { runAgent, resolveHITL } from "../agent/core"
+import { getFlow } from "../agent/flowRegistry"
+import { runFlow, resolvePendingHITL } from "../agent/flowEngine"
+import type { FlowInput } from "../agent/types"
 import { v4 as uuid } from "uuid"
 
 const api = new Hono()
@@ -105,6 +108,82 @@ api.post("/api/agent/resolve", async (c) => {
     return c.json(result)
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : "Resolution failed" }, 500)
+  }
+})
+
+api.get("/api/flows/traces", async (c) => {
+  try {
+    const traces = await queries.listFlowTraces()
+    return c.json(traces)
+  } catch {
+    return c.json({ error: "Failed to fetch flow traces" }, 500)
+  }
+})
+
+api.get("/api/flows/traces/:id", async (c) => {
+  try {
+    const trace = await queries.getFlowTrace(c.req.param("id"))
+    if (!trace) return c.json({ error: "Trace not found" }, 404)
+    return c.json(trace)
+  } catch {
+    return c.json({ error: "Failed to fetch trace" }, 500)
+  }
+})
+
+api.post("/api/flow/run", async (c) => {
+  try {
+    const body = await c.req.json()
+    const { emailId, flowHint } = body
+    if (!flowHint) return c.json({ error: "flowHint required" }, 400)
+
+    const flow = getFlow(flowHint)
+    if (!flow) return c.json({ error: `Flow not found: ${flowHint}` }, 404)
+
+    let input: FlowInput = { trigger: "manual" }
+    if (emailId) {
+      const email = await queries.getMockEmail(emailId)
+      if (email) {
+        input = {
+          trigger: "email",
+          email: {
+            from: email.from_address,
+            subject: email.subject,
+            body: email.body || "",
+            flow_hint: email.flow_hint,
+          },
+        }
+        await queries.markEmailRead(emailId)
+      }
+    }
+
+    const trace = await runFlow(flow, input)
+    return c.json(trace, 201)
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Flow run failed" }, 500)
+  }
+})
+
+api.post("/api/flow/resolve-hitl", async (c) => {
+  try {
+    const body = await c.req.json()
+    const { runId, label, approved, feedback } = body
+    if (!runId || !label || approved === undefined) {
+      return c.json({ error: "runId, label, and approved required" }, 400)
+    }
+    const resolved = resolvePendingHITL(`${runId}:${label}`, { approved, feedback })
+    if (!resolved) return c.json({ error: "No pending HITL request found" }, 404)
+    return c.json({ resolved: true })
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "HITL resolution failed" }, 500)
+  }
+})
+
+api.get("/api/emails", async (c) => {
+  try {
+    const emails = await queries.listMockEmails()
+    return c.json(emails)
+  } catch {
+    return c.json({ error: "Failed to fetch emails" }, 500)
   }
 })
 
