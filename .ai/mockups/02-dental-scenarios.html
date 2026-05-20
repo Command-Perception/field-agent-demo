@@ -1,0 +1,94 @@
+<h2>Dental Sales Agentic Flows</h2>
+<p class="subtitle">Three scenario types to be stored under <code>.ai/samples/</code></p>
+
+<div class="section">
+  <h3>Scenario 1: 🍽️ Friendly Sales Visit (Lunch Expense)</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding: 20px;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:8px; background:#f0f9ff; border:2px solid #3b82f6; padding:12px 24px; border-radius:10px;">
+          <span style="font-size:20px;">🍽️</span>
+          <span style="font-weight:600; font-size:14px;">Agent takes dentist to lunch — $187</span>
+        </div>
+        <div style="color:#94a3b8; font-size:16px;">↓</div>
+        <div style="background:#f8fafc; border:2px solid #e2e8f0; padding:10px 20px; border-radius:8px; font-size:13px;">📝 Submit expense report</div>
+        <div style="color:#94a3b8; font-size:16px;">↓</div>
+        <div style="background:#fef3c7; border:2px solid #f59e0b; padding:12px 24px; border-radius:10px; font-size:13px; font-weight:600;">
+          🔀 Per Diem Check: $100 limit
+          <div style="font-size:11px; color:#92400e; margin-top:4px;">$187 > $100 → Over limit</div>
+        </div>
+        <div style="display:flex; gap:60px; margin-top:8px;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:8px; opacity:0.4;">
+            <div style="color:#22c55e; font-size:16px;">↓</div>
+            <div style="background:#dcfce7; border:2px solid #22c55e; padding:8px 16px; border-radius:8px; font-size:11px; font-weight:600;">✅ Auto-Approved</div>
+            <div style="font-size:10px; color:#94a3b8;">(would route here if ≤ $100)</div>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+            <div style="color:#ef4444; font-size:16px;">↓</div>
+            <div style="background:#fee2e2; border:2px solid #ef4444; padding:8px 16px; border-radius:8px; font-size:11px; font-weight:600;">👤 Human-in-the-Loop Approval</div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:8px 16px; border-radius:6px; font-size:11px; color:#64748b;">Manager reviews & approves/rejects</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Scenario 2: 🔧 Scheduled Maintenance Visit</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding: 20px;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:8px; background:#f0fdf4; border:2px solid #22c55e; padding:12px 24px; border-radius:10px;">
+          <span style="font-size:20px;">📅</span>
+          <span style="font-weight:600; font-size:14px;">Scheduled trigger: Maintenance due</span>
+        </div>
+        <div style="color:#94a3b8; font-size:16px;">↓</div>
+        <div style="background:#f8fafc; border:2px solid #e2e8f0; padding:10px 20px; border-radius:8px; font-size:13px;">🤖 AI schedules visit with customer</div>
+        <div style="color:#94a3b8; font-size:16px;">↓</div>
+        <div style="background:#fef3c7; border:2px solid #f59e0b; padding:10px 20px; border-radius:8px; font-size:13px;">🔀 Match visit to maintenance schedule</div>
+        <div style="color:#94a3b8; font-size:16px;">↓</div>
+        <div style="display:flex; align-items:center; gap:8px; background:#f0fdf4; border:2px solid #22c55e; padding:12px 24px; border-radius:10px;">
+          <span style="font-size:16px;">🔧</span>
+          <span style="font-weight:600; font-size:13px;">Human agent services equipment</span>
+        </div>
+        <div style="color:#94a3b8; font-size:16px;">↓</div>
+        <div style="background:#f0fdf4; border:2px solid #22c55e; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:600;">✅ Complete & log service record</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Scenario 3: ⚠️ Recall Flow</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="padding: 20px;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:8px; background:#fef2f2; border:2px solid #ef4444; padding:12px 24px; border-radius:10px;">
+          <span style="font-size:20px;">⚠️</span>
+          <span style="font-weight:600; font-size:14px;">Recall initiated for X100 equipment</span>
+        </div>
+        <div style="color:#94a3b8; font-size:16px;">↓</div>
+        <div style="background:#f8fafc; border:2px solid #e2e8f0; padding:10px 20px; border-radius:8px; font-size:13px;">🤖 AI orders replacement parts</div>
+        <div style="color:#94a3b8; font-size:16px;">↓</div>
+        <div style="background:#f8fafc; border:2px solid #e2e8f0; padding:10px 20px; border-radius:8px; font-size:13px;">📅 AI schedules maintenance visit</div>
+        <div style="color:#94a3b8; font-size:16px;">↓</div>
+        <div style="background:#fef3c7; border:2px solid #f59e0b; padding:10px 20px; border-radius:8px; font-size:12px; font-weight:600;">
+          ⛔ Precondition: Parts must have arrived
+          <div style="font-size:11px; color:#92400e; margin-top:4px;">Flow blocks here until parts are delivered</div>
+        </div>
+        <div style="color:#22c55e; font-size:16px;">↓</div>
+        <div style="display:flex; align-items:center; gap:8px; background:#f0fdf4; border:2px solid #22c55e; padding:12px 24px; border-radius:10px;">
+          <span style="font-size:16px;">🔧</span>
+          <span style="font-weight:600; font-size:13px;">Human agent executes recall (parts on hand)</span>
+        </div>
+        <div style="color:#94a3b8; font-size:16px;">↓</div>
+        <div style="background:#f0fdf4; border:2px solid #22c55e; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:600;">✅ Recall completed & documented</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <p class="subtitle">These flows will be defined as structured JSON in <code>.ai/samples/</code> and routed by a lightweight AI model (Qwen 3.5 27B) based on incoming "email" triggers.</p>
+</div>
