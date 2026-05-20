@@ -14,7 +14,10 @@
     "jsx": "preserve",
     "incremental": true,
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"] },
+    "paths": {
+      "@/*": ["./src/*"],
+      "@samples/*": ["./.ai/samples/*"]
+    },
     "outDir": "dist",
     "forceConsistentCasingInFileNames": true
   },
