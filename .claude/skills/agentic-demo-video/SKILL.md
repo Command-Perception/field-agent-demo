@@ -168,7 +168,24 @@ When dispatched as a subagent to run a scenario:
    b. Take a screenshot saved to the session directory
    c. **Update session.md immediately** with results, observations, screenshot paths
    d. If a step fails, retry once with a different approach, then log failure
-6. **After all steps**: Stop recording (if started), mark status as completed or failed
+### Step 6: Wait for run to complete
+ 6. After all steps: Stop recording.
+
+### Step 7: Convert video to MP4 (if record=true)
+The WebM file from agent-browser uses VP8 codec which isn't universally playable.
+Always convert to MP4 (H.264) using ffmpeg:
+
+```bash
+ffmpeg -i session.webm -c:v libx264 -preset fast -crf 23 -pix_fmt yuv420p session.mp4 -y
+```
+
+If ffmpeg is not installed, install it first:
+```bash
+sudo apt-get install -y ffmpeg || brew install ffmpeg
+```
+
+The final video path in session.md should reference the `.mp4` file, not `.webm`.
+Delete the original `.webm` after conversion.
 7. **Return**: Summary of what happened, path to session.md, path to video
 
 ### Error Recovery

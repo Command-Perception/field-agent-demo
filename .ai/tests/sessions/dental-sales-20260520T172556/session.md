@@ -90,7 +90,7 @@
 | File | Path |
 |------|------|
 | Session log | session.md |
-| Video | session.webm |
+| Video (MP4) | session.mp4 |
 | Step 1 | step1-dashboard.png |
 | Step 2 | step2-visit-created.png |
 | Step 4 | step4-agent-running.png |
