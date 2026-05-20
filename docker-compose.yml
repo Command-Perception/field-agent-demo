@@ -12,6 +12,7 @@ services:
       DATABASE_URL: postgres://agent:agent@db:5432/agent_system
       CROFAI_API_KEY: ${CROFAI_API_KEY:?CROFAI_API_KEY is required}
       ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://anthropic.nahcrof.com}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-deepseek-v4-flash}
       ANTHROPIC_API_KEY: ${CROFAI_API_KEY}
       PORT: "3999"
 

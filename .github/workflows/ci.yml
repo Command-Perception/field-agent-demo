@@ -9,6 +9,7 @@ on:
 env:
   CROFAI_API_KEY: ${{ secrets.CROFAI_API_KEY }}
   ANTHROPIC_BASE_URL: https://anthropic.nahcrof.com
+  ANTHROPIC_MODEL: deepseek-v4-flash
   DATABASE_URL: postgres://agent:agent@localhost:5432/agent_system_test
 
 jobs:

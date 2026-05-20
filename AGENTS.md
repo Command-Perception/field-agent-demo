@@ -117,3 +117,8 @@ When superpowers skills are used during a session:
 | `test-driven-development` | When writing new features or fixing bugs |
 | `agent-browser` | For browser-based E2E testing |
 | `verification-before-completion` | Before claiming any work is done |
+| `crofai-models` | When configuring AI model selection for the agent pipeline |
+
+### CrofAI Models
+
+This project uses CrofAI's Anthropic-compatible proxy at `https://anthropic.nahcrof.com`. It's a transparent proxy — any model ID works by setting `ANTHROPIC_MODEL` in `.env`. See `.claude/skills/crofai-models/SKILL.md` for available models and configuration details.
