@@ -1,25 +1,28 @@
 import Anthropic from "@anthropic-ai/sdk"
+import type { MessageParam, Tool } from "@anthropic-ai/sdk/resources/messages"
 
-const ANTHROPIC_API_KEY = process.env.CROFAI_API_KEY || process.env.ANTHROPIC_API_KEY
-if (!ANTHROPIC_API_KEY) {
-  throw new Error("CROFAI_API_KEY or ANTHROPIC_API_KEY is required")
+let anthropic: Anthropic | null = null
+
+function getClient(): Anthropic {
+  if (anthropic) return anthropic
+  const apiKey = process.env.CROFAI_API_KEY || process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    throw new Error("CROFAI_API_KEY or ANTHROPIC_API_KEY is required")
+  }
+  const baseURL = process.env.ANTHROPIC_BASE_URL || "https://anthropic.nahcrof.com"
+  anthropic = new Anthropic({ apiKey, baseURL })
+  return anthropic
 }
 
-const BASE_URL = process.env.ANTHROPIC_BASE_URL || "https://anthropic.nahcrof.com"
 const MODEL = process.env.ANTHROPIC_MODEL || "glm-5.1"
-
-export const anthropic = new Anthropic({
-  apiKey: ANTHROPIC_API_KEY,
-  baseURL: BASE_URL,
-})
 
 export async function sendMessage(options: {
   system?: string
-  messages: Anthropic.Messages.MessageParam[]
-  tools?: Anthropic.Messages.Tool[]
+  messages: MessageParam[]
+  tools?: Tool[]
   maxTokens?: number
 }) {
-  return anthropic.messages.create({
+  return getClient().messages.create({
     model: MODEL,
     max_tokens: options.maxTokens || 4096,
     system: options.system,
