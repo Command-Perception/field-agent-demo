@@ -1,3 +1,7 @@
+networks:
+  agentic-demo-net:
+    driver: bridge
+
 services:
   api:
     build:
@@ -5,6 +9,8 @@ services:
       dockerfile: Dockerfile.api
     ports:
       - "3999:3999"
+    networks:
+      - agentic-demo-net
     depends_on:
       db:
         condition: service_healthy
@@ -20,6 +26,8 @@ services:
     build: .
     ports:
       - "4001:3000"
+    networks:
+      - agentic-demo-net
     depends_on:
       api:
         condition: service_started
@@ -29,8 +37,10 @@ services:
 
   db:
     image: postgres:16-alpine
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
+    networks:
+      - agentic-demo-net
     volumes:
       - pgdata:/var/lib/postgresql/data
     environment:
