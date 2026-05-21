@@ -3,19 +3,27 @@ import { FlowContext, EventRecorder } from "./flow"
 import type { FlowInput, FlowTrace, FlowHITLResponse } from "./types"
 import { query } from "../data/db"
 import { v4 as uuid } from "uuid"
+import toolHandlers from "./toolHandlers"
 
 const pendingHITL = new Map<string, { resolve: (r: FlowHITLResponse) => void }>()
+
+function registerDefaultTools(ctx: FlowContext) {
+  for (const [name, handler] of Object.entries(toolHandlers)) {
+    ctx.tools.register(name, handler as any)
+  }
+}
 
 export async function runFlow(flow: FlowDefinition, input: FlowInput): Promise<FlowTrace> {
   const runId = uuid()
   const recorder = new EventRecorder()
 
   await query(
-    `INSERT INTO agent_runs (id, visit_id, status, summary) VALUES ($1, $2, $3, $4)`,
-    [runId, "00000000-0000-0000-0000-000000000000", "running", flow.name]
+    `INSERT INTO agent_runs (id, status, summary) VALUES ($1, $2, $3)`,
+    [runId, "running", flow.name]
   )
 
   const ctx = new FlowContext(input, recorder)
+  registerDefaultTools(ctx)
 
   recorder.record("step_start", flow.name, { description: flow.description })
 
