@@ -63,6 +63,18 @@ async function migrate() {
   await query("CREATE INDEX IF NOT EXISTS idx_agent_runs_visit_id ON agent_runs(visit_id)")
   await query("CREATE INDEX IF NOT EXISTS idx_agent_tasks_run_id ON agent_tasks(run_id)")
   await query("CREATE INDEX IF NOT EXISTS idx_artifacts_run_id ON artifacts(run_id)")
+  await query(`ALTER TABLE agent_runs ADD COLUMN IF NOT EXISTS execution_trace JSONB`)
+
+  await query(`CREATE TABLE IF NOT EXISTS mock_emails (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    from_address TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    body TEXT,
+    flow_hint TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  )`)
+
   console.log("Migrations complete")
 }
 
