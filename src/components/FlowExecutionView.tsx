@@ -60,9 +60,9 @@ export default function FlowExecutionView() {
       <header className="bg-slate-800 text-white px-5 py-2.5 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-6">
           <span className="font-bold text-base">Field Agent</span>
-          <span className="text-slate-400 text-sm cursor-pointer hover:text-white">Dashboard</span>
-          <span className="text-slate-400 text-sm cursor-pointer hover:text-white">Flows</span>
-          <span className="text-slate-400 text-sm cursor-pointer hover:text-white">History</span>
+          <span className="text-slate-400 text-sm cursor-default">Dashboard</span>
+          <span className="text-slate-400 text-sm cursor-default">Flows</span>
+          <span className="text-slate-400 text-sm cursor-default">History</span>
         </div>
         <div className="flex items-center gap-3">
           <ResetDemoButton onReset={handleReset} />
